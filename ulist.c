@@ -62,25 +62,30 @@ static ulist_status_e _add_item_to_node(ulist_t *list, ulist_node_t *node,
         }
     }
 
+    char *target = NODE_DATA(list, node, index);
+
     // Check if existing items need to be shifted to make room
     if (((node == new ) && (index != node->used)) || (node != new))
     {
         // Number of bytes to be moved
-        size_t bytes_to_move = ((node->used - index) - 1)
-            * list->item_size_bytes;
+        size_t bytes_to_move = (node->used - index - 1) * list->item_size_bytes;
 
-        // Move last item to new location
-        memcpy(new->data, NODE_DATA(list, node, index) + bytes_to_move, list->item_size_bytes);
+            // Move last item to new location
+            memcpy(NODE_DATA(list, new, new->used),
+                    NODE_DATA(list, node, index) + bytes_to_move,
+                    list->item_size_bytes);
 
-        char *dest = NODE_DATA(list, node, index + 1);
-        char *src = NODE_DATA(list, node, index);
+        if (bytes_to_move)
+        {
+            char *dest = target + list->item_size_bytes;
 
-        // Move remaining items to make room for new item
-        memmove(dest, src, bytes_to_move);
+            // Move remaining items to make room for new item
+            memmove(dest, target, bytes_to_move);
+        }
     }
 
     // Copy item to target location
-    memcpy(NODE_DATA(list, node, index), item, list->item_size_bytes);
+    memcpy(target, item, list->item_size_bytes);
 
     // Increment counters
     new->used += 1;

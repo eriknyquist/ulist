@@ -60,6 +60,13 @@ int main(int argc, char *argv[])
         return err;
     }
 
+    val = 7777;
+    err = ulist_insert_item(&list, 5, &val);
+    if (err != ULIST_OK)
+    {
+        return err;
+    }
+
     printf("--------------\n\n");
     _dump_list(&list);
 
