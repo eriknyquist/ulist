@@ -66,13 +66,13 @@ static ulist_status_e _add_item_to_node(ulist_t *list, ulist_node_t *node,
     if (((node == new ) && (index != node->used)) || (node != new))
     {
         // Number of bytes to be moved
-        size_t bytes_to_move = index - (node->used - 2);
+        size_t bytes_to_move = (node->used - index) - 1;
 
         // Move last item to new location
         memcpy(new->data, node->data, list->item_size_bytes);
 
         // Move remaining items to make room for new item
-        memcpy(NODE_DATA(list, node, index + 1), NODE_DATA(list, node, index),
+        memmove(NODE_DATA(list, node, index + 1), NODE_DATA(list, node, index),
             bytes_to_move);
     }
 
