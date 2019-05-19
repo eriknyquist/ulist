@@ -127,7 +127,7 @@ static access_params_t *_find_item_by_index(ulist_t *list, unsigned long long in
             node = node->next;
         }
 
-        local_index = total_items - (index + 1);
+        local_index = node->used - (total_items - index);
     }
 
     if (NULL == node)
