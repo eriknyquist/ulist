@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include "ulist_api.h"
 
-#define ITEMS_PER_NODE (5u)
+#define ITEMS_PER_NODE (3u)
 
 #define TESTLIST_SIZE (12u)
 
@@ -53,15 +53,38 @@ int main(int argc, char *argv[])
 
     _dump_list(&list);
 
-    int val = 9999;
+    int val = 1111;
     err = ulist_insert_item(&list, 2, &val);
     if (err != ULIST_OK)
     {
         return err;
     }
 
-    val = 7777;
+    printf("--------------\n\n");
+    _dump_list(&list);
+
+    val = 2222;
     err = ulist_insert_item(&list, 5, &val);
+    if (err != ULIST_OK)
+    {
+        return err;
+    }
+
+    printf("--------------\n\n");
+    _dump_list(&list);
+
+    val = 3333;
+    err = ulist_insert_item(&list, 9, &val);
+    if (err != ULIST_OK)
+    {
+        return err;
+    }
+
+    printf("--------------\n\n");
+    _dump_list(&list);
+
+    val = 4444;
+    err = ulist_insert_item(&list, 11, &val);
     if (err != ULIST_OK)
     {
         return err;
