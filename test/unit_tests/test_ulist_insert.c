@@ -6,6 +6,19 @@
 
 static ulist_t list;
 
+static int _int_in_list(int val, int *list, int len)
+{
+    for (int i = 0; i < len; i++)
+    {
+        if (val == list[i])
+        {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
 void setUp(void)
 {
    TEST_ASSERT_EQUAL(ULIST_OK, ulist_create(&list, sizeof(int), NODE_SIZE));
@@ -79,6 +92,50 @@ void test_insert_num_items(void)
     }
 }
 
+void test_insert_random_inserts(void)
+{
+    int insert_indices[10] = { 4, 18, 205, 250, 348, 444, 598, 770, 899, 989 };
+    int num_test_values = 1000;
+    int *out_val;
+
+    int num_indices = sizeof(insert_indices) / sizeof(int);
+
+    // build list with simple ascending pattern
+    for (int i = 0; i < num_test_values; i++)
+    {
+        TEST_ASSERT_EQUAL(ULIST_OK, ulist_insert_item(&list, list.num_items, &i));
+    }
+
+    // insert other known values at locations in insert_indices
+    for (int i = 0; i < num_indices; i++)
+    {
+        int insertval = i + 100;
+        TEST_ASSERT_EQUAL(ULIST_OK, ulist_insert_item(&list, insert_indices[i], &insertval));
+    }
+
+    int indices_found = 0;
+
+    // verify list now reports expected number of items
+    TEST_ASSERT_EQUAL(list.num_items, num_test_values + num_indices);
+
+    // verify all original list items exist, and inserted items are in their
+    // expected locations
+    for (int i = 0; i < list.num_items; i++)
+    {
+        TEST_ASSERT_EQUAL(ULIST_OK, ulist_get_item(&list, i, (void **)&out_val));
+
+        if (_int_in_list(i, insert_indices, num_indices))
+        {
+            TEST_ASSERT_EQUAL(*out_val, indices_found + 100);
+            indices_found += 1;
+        }
+        else
+        {
+            TEST_ASSERT_EQUAL(*out_val, i - indices_found);
+        }
+    }
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -88,5 +145,6 @@ int main(void)
     RUN_TEST(test_insert_empty_index_range_2);
     RUN_TEST(test_insert_end);
     RUN_TEST(test_insert_num_items);
+    RUN_TEST(test_insert_random_inserts);
     return UNITY_END();
 }
