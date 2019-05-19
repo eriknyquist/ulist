@@ -26,6 +26,7 @@ static ulist_node_t *_new_node(ulist_t *list)
         return NULL;
     }
 
+    memset(node, 0, sizeof(ulist_node_t));
     return node;
 }
 
