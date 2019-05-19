@@ -21,7 +21,7 @@ void _dump_list(ulist_t *list)
 
         for (int i = 0; i < node->used; i++)
         {
-            printf("  %d\n", data[i]);
+            printf("  %d (%p)\n", data[i], data + i);
         }
         printf("\n");
 

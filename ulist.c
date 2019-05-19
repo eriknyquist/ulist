@@ -8,7 +8,7 @@
                                    (list->item_size_bytes * \
                                    list->items_per_node))
 
-#define NODE_DATA(list, node, i) (node->data + (list->item_size_bytes * i))
+#define NODE_DATA(list, node, i) (node->data + (list->item_size_bytes * (i)))
 
 // Struct to hold parameters required to access a single data item in list
 typedef struct {
@@ -66,14 +66,17 @@ static ulist_status_e _add_item_to_node(ulist_t *list, ulist_node_t *node,
     if (((node == new ) && (index != node->used)) || (node != new))
     {
         // Number of bytes to be moved
-        size_t bytes_to_move = (node->used - index) - 1;
+        size_t bytes_to_move = ((node->used - index) - 1)
+            * list->item_size_bytes;
 
         // Move last item to new location
-        memcpy(new->data, node->data, list->item_size_bytes);
+        memcpy(new->data, NODE_DATA(list, node, index) + bytes_to_move, list->item_size_bytes);
+
+        char *dest = NODE_DATA(list, node, index + 1);
+        char *src = NODE_DATA(list, node, index);
 
         // Move remaining items to make room for new item
-        memmove(NODE_DATA(list, node, index + 1), NODE_DATA(list, node, index),
-            bytes_to_move);
+        memmove(dest, src, bytes_to_move);
     }
 
     // Copy item to target location
