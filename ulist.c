@@ -93,7 +93,7 @@ static access_params_t *_find_item_by_index(ulist_t *list, unsigned long long in
     ulist_node_t *node = NULL;
     size_t local_index;
 
-    if ((NULL == access_params) || (index > (list->num_items - 1u)))
+    if ((NULL == access_params) || ((index + 1) > list->num_items))
     {
         return NULL;
     }
@@ -105,7 +105,7 @@ static access_params_t *_find_item_by_index(ulist_t *list, unsigned long long in
         local_index = 0u;
     }
     // Last item
-    else if ((list->num_items - 1u) == index)
+    else if ((index + 1u) == list->num_items)
     {
         node = list->tail;
         local_index = list->tail->used - 1u;

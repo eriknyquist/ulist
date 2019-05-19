@@ -40,4 +40,11 @@ int main(int argc, char *argv[])
 
         printf("%d\n", *item);
     }
+
+    if ((err = ulist_destroy(&list)) != ULIST_OK)
+    {
+        return err;
+    }
+
+    return 0;
 }
