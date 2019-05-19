@@ -4,9 +4,9 @@
 #include <string.h>
 #include "ulist_api.h"
 
-#define NODE_ALLOC_SIZE(list) (sizeof(ulist_node_t) +      \
-                                   list->item_size_bytes + \
-                                   list->items_per_node)
+#define NODE_ALLOC_SIZE(list) (sizeof(ulist_node_t) +       \
+                                   (list->item_size_bytes * \
+                                   list->items_per_node))
 
 #define NODE_DATA(list, node, i) (node->data + (list->item_size_bytes * i))
 
@@ -62,7 +62,7 @@ static ulist_status_e _add_item_to_node(ulist_t *list, ulist_node_t *node,
     }
 
     // Check if existing items need to be shifted to make room
-    if (((node == new ) && (index == node->used)) || (node != new))
+    if (((node == new ) && (index != node->used)) || (node != new))
     {
         // Number of bytes to be moved
         size_t bytes_to_move = index - (node->used - 2);
@@ -184,11 +184,6 @@ ulist_status_e ulist_node_size_bytes(ulist_t *list, size_t *size_bytes)
 ulist_status_e ulist_create(ulist_t *list, size_t item_size_bytes,
     size_t items_per_node)
 {
-    if (list->head || list->tail)
-    {
-        return ULIST_ALREADY_INIT;
-    }
-
     if ((NULL == list) || (0u == item_size_bytes) || (0u == items_per_node))
     {
         return ULIST_INVALID_PARAM;
