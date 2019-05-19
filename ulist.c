@@ -114,7 +114,6 @@ static access_params_t *_find_item_by_index(ulist_t *list, unsigned long long in
     {
         node = list->head;
         unsigned long long total_items = 0u;
-        size_t local_index;
 
         while (NULL != node)
         {
@@ -185,7 +184,6 @@ ulist_status_e ulist_node_size_bytes(ulist_t *list, size_t *size_bytes)
 ulist_status_e ulist_create(ulist_t *list, size_t item_size_bytes,
     size_t items_per_node)
 {
-    ulist_status_e err;
     if (list->head || list->tail)
     {
         return ULIST_ALREADY_INIT;
