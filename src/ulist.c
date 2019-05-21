@@ -98,45 +98,30 @@ static ulist_status_e _add_item_to_node(ulist_t *list, ulist_node_t *node,
 static access_params_t *_find_item_by_index(ulist_t *list, unsigned long long index,
     access_params_t *access_params)
 {
-    ulist_node_t *node = NULL;
-    size_t local_index;
-
     if ((NULL == access_params) || ((index + 1) > list->num_items))
     {
         return NULL;
     }
 
-    // First item
-    if (0u == index)
-    {
-        node = list->head;
-        local_index = 0u;
-    }
-    // Last item
-    else if ((index + 1u) == list->num_items)
-    {
-        node = list->tail;
-        local_index = list->tail->used - 1u;
-    }
-    // Somewhere in between
-    else
-    {
-        node = list->head;
-        unsigned long long total_items = 0u;
+    ulist_node_t *node = list->head;
+    unsigned long long item_count = 0u;
+    size_t local_index;
 
-        while (NULL != node)
+    // Loop through nodes, incrementing item count until we reach target item
+    while (NULL != node)
+    {
+        item_count += node->used;
+        if (item_count >= (index + 1))
         {
-            total_items += node->used;
-            if (total_items >= (index + 1))
-            {
-                break;
-            }
-
-            node = node->next;
+            // Found/exceeded target item
+            break;
         }
 
-        local_index = node->used - (total_items - index);
+        node = node->next;
     }
+
+    // Item index within node
+    local_index = node->used - (item_count - index);
 
     if (NULL == node)
     {
