@@ -17,7 +17,7 @@ typedef struct {
 } access_params_t;
 
 // Allocate a new node and return a pointer to it
-static ulist_node_t *_new_node(ulist_t *list)
+static ulist_node_t *_alloc_new_node(ulist_t *list)
 {
     ulist_node_t *node;
 
@@ -30,35 +30,59 @@ static ulist_node_t *_new_node(ulist_t *list)
     return node;
 }
 
+/*
+static void _move_items(ulist_t *list, ulist_node_t *dest,
+    ulist_node_t *src, size_t)
+{
+    size_t half = list->items_per_node / 2u;
+
+}
+*/
+
+// Add a new node after the given node, move half of the full node's contents
+// into the new node, and insert the item at the requested index
+static ulist_node_t *_new_node_after(ulist_t *list, ulist_node_t *full_node,
+    void *item)
+{
+    ulist_node_t *new = NULL;
+
+    if ((new = _alloc_new_node(list)) == NULL)
+    {
+        return NULL;
+    }
+
+    // Make sure new node is connected to full node's old neighbour
+    if (full_node->next)
+    {
+        full_node->next->previous = new;
+    }
+    new->next = full_node->next;
+
+    // Connect new node to full node
+    full_node->next = new;
+    new->previous = full_node;
+
+    // Check if new node is tail
+    if (list->tail == full_node)
+    {
+        list->tail = new;
+    }
+
+    return new;
+}
+
 // Add item to node, creating a new node if required
-static ulist_status_e _add_item_to_node(ulist_t *list, ulist_node_t *node,
-        size_t index, void *item)
+static ulist_status_e _insert_item(ulist_t *list, ulist_node_t *node,
+    size_t index, void *item)
 {
     ulist_node_t *new = node;
 
     // Current node is full, create a new one
     if (node->used == list->items_per_node)
     {
-        if ((new = _new_node(list)) == NULL)
+        if ((new = _new_node_after(list, node, item)) == NULL)
         {
             return ULIST_ERROR_MEM;
-        }
-
-        // Make sure new node is connected to full node's old neighbour
-        if (node->next)
-        {
-            node->next->previous = new;
-        }
-        new->next = node->next;
-
-        // Connect new node to full node
-        node->next = new;
-        new->previous = node;
-
-        // Check if new node is tail
-        if (list->tail == node)
-        {
-            list->tail = new;
         }
     }
 
@@ -141,7 +165,7 @@ static ulist_status_e _new_tail_item(ulist_t *list, void *item)
     if (list->tail->used == list->items_per_node)
     {
         ulist_node_t *new;
-        if ((new = _new_node(list)) == NULL)
+        if ((new = _alloc_new_node(list)) == NULL)
         {
             return ULIST_ERROR_MEM;
         }
@@ -152,10 +176,10 @@ static ulist_status_e _new_tail_item(ulist_t *list, void *item)
 
         params.node = new;
         params.local_index = 0u;
-        
+
     }
 
-    return _add_item_to_node(list, params.node, params.local_index, item);
+    return _insert_item(list, params.node, params.local_index, item);
 }
 
 static int _check_write_index(ulist_t *list, unsigned long long index)
@@ -187,7 +211,7 @@ ulist_status_e ulist_create(ulist_t *list, size_t item_size_bytes,
     list->item_size_bytes = item_size_bytes;
     list->items_per_node = items_per_node;
 
-    if ((list->head = _new_node(list)) == NULL)
+    if ((list->head = _alloc_new_node(list)) == NULL)
     {
         return ULIST_ERROR_MEM;
     }
@@ -245,7 +269,7 @@ ulist_status_e ulist_insert_item(ulist_t *list, unsigned long long index, void *
         return ULIST_ERROR_INTERNAL;
     }
 
-    return _add_item_to_node(list, params.node, params.local_index, item);
+    return _insert_item(list, params.node, params.local_index, item);
 }
 
 ulist_status_e ulist_append_item(ulist_t *list, void *item)
