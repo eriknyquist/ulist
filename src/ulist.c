@@ -179,7 +179,6 @@ static ulist_status_e _insert_item(ulist_t *list, access_params_t *params,
     }
 
     list->num_items += 1u;
-
     return ULIST_OK;
 }
 
@@ -221,7 +220,8 @@ static void _remove_item(ulist_t *list, access_params_t *params)
             bytes_to_move);
     }
 
-    params->node->used -= 1;
+    params->node->used -= 1u;
+    list->num_items -= 1u;
     size_t half_items = list->items_per_node / 2u;
 
     if (params->node->used > half_items)
@@ -251,8 +251,6 @@ static void _remove_item(ulist_t *list, access_params_t *params)
         // Source node is empty
         _delete_node(list, src_node);
     }
-
-    list->num_items -= 1u;
 }
 
 // Find a specific data item by index and fill out an access_params_t instance
