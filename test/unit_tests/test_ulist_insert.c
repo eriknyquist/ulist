@@ -60,25 +60,25 @@ void test_insert_end(void)
     int val2 = 8888;
     int val3 = 9999;
 
-    int *out_val1, *out_val2, *out_val3;
+    int out_val1, out_val2, out_val3;
 
     TEST_ASSERT_EQUAL(ULIST_OK, ulist_insert_item(&list, 0u, &val1));
     TEST_ASSERT_EQUAL(ULIST_OK, ulist_insert_item(&list, 1u, &val2));
     TEST_ASSERT_EQUAL(ULIST_OK, ulist_insert_item(&list, 2u, &val3));
 
-    TEST_ASSERT_EQUAL(ULIST_OK, ulist_get_item(&list, 0u, (void **)&out_val1));
-    TEST_ASSERT_EQUAL(ULIST_OK, ulist_get_item(&list, 1u, (void **)&out_val2));
-    TEST_ASSERT_EQUAL(ULIST_OK, ulist_get_item(&list, 2u, (void **)&out_val3));
+    TEST_ASSERT_EQUAL(ULIST_OK, ulist_get_item(&list, 0u, &out_val1));
+    TEST_ASSERT_EQUAL(ULIST_OK, ulist_get_item(&list, 1u, &out_val2));
+    TEST_ASSERT_EQUAL(ULIST_OK, ulist_get_item(&list, 2u, &out_val3));
 
-    TEST_ASSERT_EQUAL(*out_val1, val1);
-    TEST_ASSERT_EQUAL(*out_val2, val2);
-    TEST_ASSERT_EQUAL(*out_val3, val3);
+    TEST_ASSERT_EQUAL(out_val1, val1);
+    TEST_ASSERT_EQUAL(out_val2, val2);
+    TEST_ASSERT_EQUAL(out_val3, val3);
 }
 
 void test_insert_num_items(void)
 {
     int num_test_values = 1000;
-    int *out_val;
+    int out_val;
 
     for (int i = 0; i < num_test_values; i++)
     {
@@ -87,8 +87,8 @@ void test_insert_num_items(void)
 
     for (int i = 0; i < num_test_values; i++)
     {
-        TEST_ASSERT_EQUAL(ULIST_OK, ulist_get_item(&list, i, (void **)&out_val));
-        TEST_ASSERT_EQUAL(*out_val, i);
+        TEST_ASSERT_EQUAL(ULIST_OK, ulist_get_item(&list, i, &out_val));
+        TEST_ASSERT_EQUAL(out_val, i);
     }
 }
 
@@ -96,7 +96,7 @@ void test_insert_random_inserts(void)
 {
     int insert_indices[10] = { 4, 18, 205, 250, 348, 444, 598, 770, 899, 989 };
     int num_test_values = 1000;
-    int *out_val;
+    int out_val;
 
     int num_indices = sizeof(insert_indices) / sizeof(int);
 
@@ -122,16 +122,16 @@ void test_insert_random_inserts(void)
     // expected locations
     for (int i = 0; i < list.num_items; i++)
     {
-        TEST_ASSERT_EQUAL(ULIST_OK, ulist_get_item(&list, i, (void **)&out_val));
+        TEST_ASSERT_EQUAL(ULIST_OK, ulist_get_item(&list, i, &out_val));
 
         if (_int_in_list(i, insert_indices, num_indices))
         {
-            TEST_ASSERT_EQUAL(*out_val, indices_found + 100);
+            TEST_ASSERT_EQUAL(out_val, indices_found + 100);
             indices_found += 1;
         }
         else
         {
-            TEST_ASSERT_EQUAL(*out_val, i - indices_found);
+            TEST_ASSERT_EQUAL(out_val, i - indices_found);
         }
     }
 }

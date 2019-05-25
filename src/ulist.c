@@ -296,7 +296,7 @@ ulist_status_e ulist_append_item(ulist_t *list, void *item)
     return ulist_insert_item(list, list->num_items, item);
 }
 
-ulist_status_e ulist_get_item(ulist_t *list, unsigned long long index, void **item)
+ulist_status_e ulist_get_item(ulist_t *list, unsigned long long index, void *item)
 {
     if ((NULL == list) || (NULL == list->tail) || (NULL == item))
     {
@@ -315,6 +315,8 @@ ulist_status_e ulist_get_item(ulist_t *list, unsigned long long index, void **it
         return ULIST_ERROR_INTERNAL;
     }
 
-    *item = NODE_DATA(list, params.node, params.local_index);
+    void *data = NODE_DATA(list, params.node, params.local_index);
+    memcpy(item, data, list->item_size_bytes);
+
     return ULIST_OK;
 }

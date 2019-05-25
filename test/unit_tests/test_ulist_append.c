@@ -58,9 +58,9 @@ void test_append_ascending_loop(void)
 
     for (int i = 0; i < num_test_values; i++)
     {
-        int *val;
-        TEST_ASSERT_EQUAL(ULIST_OK, ulist_get_item(&list, i, (void **)&val));
-        TEST_ASSERT_EQUAL(*val, i);
+        int val;
+        TEST_ASSERT_EQUAL(ULIST_OK, ulist_get_item(&list, i, &val));
+        TEST_ASSERT_EQUAL(val, i);
     }
 }
 
