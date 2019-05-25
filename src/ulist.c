@@ -404,7 +404,8 @@ ulist_status_e ulist_insert_item(ulist_t *list, unsigned long long index, void *
         return ULIST_INDEX_OUT_OF_RANGE;
     }
 
-    // Add new item on the tail
+    // Special case for index of list->num_items, which is technically
+    // out-of-range; new item becomes tail item
     if (index == list->num_items)
     {
         return _new_tail_item(list, item);
