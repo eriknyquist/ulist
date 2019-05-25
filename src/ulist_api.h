@@ -1,7 +1,7 @@
 /**
  * @file   ulist_api.h
  * @author Erik Nyquist
- * @brief  Unrolled linked-list API
+ * @brief  Unrolled linked list API
  */
 #ifndef ULIST_API_H
 #define ULIST_API_H
