@@ -167,8 +167,18 @@ static ulist_status_e _insert_item(ulist_t *list, access_params_t *params,
 {
     ulist_node_t *new = params->node;
 
+    // If item is to be added to index of 0 of this node, and the previous node
+    // is not full, we can avoid some operations and just add the item at the
+    // end of the previous node
+    if ((params->local_index == 0u) && params->node->previous
+         && (params->node->previous->used < list->items_per_node))
+    {
+        params->local_index = params->node->previous->used;
+        params->node = params->node->previous;
+        _add_to_nonfull_node(list, params, item);
+    }
     // Current node is full, create a new one
-    if (params->node->used == list->items_per_node)
+    else if (params->node->used == list->items_per_node)
     {
         if ((new = _add_to_full_node(list, params, item)) == NULL)
         {
@@ -184,6 +194,7 @@ static ulist_status_e _insert_item(ulist_t *list, access_params_t *params,
     return ULIST_OK;
 }
 
+// Free an empty node and connect the nodes on either side of it
 static void _delete_node(ulist_t *list, ulist_node_t *node)
 {
     if (node->next)
