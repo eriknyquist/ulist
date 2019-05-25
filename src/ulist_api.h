@@ -35,6 +35,7 @@ typedef struct {
     size_t item_size_bytes;
     size_t items_per_node;
     unsigned long long num_items;
+    unsigned long long nodes;
 } ulist_t;
 
 /**

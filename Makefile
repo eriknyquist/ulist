@@ -53,8 +53,11 @@ $(TEST_MAIN): CFLAGS = $(TEST_MAIN_CFLAGS)
 $(TEST_MAIN): $(OBJ) $(TEST_MAIN_OBJ)
 	$(CC) $^ -o $@ $(CFLAGS) $(LDFLAGS)
 
+build-unit-tests: CFLAGS = $(UNIT_TEST_CFLAGS)
+build-unit-tests: test-build-dir $(OBJ) $(UNITY_OBJ) $(UNIT_TEST_OBJS) $(UNIT_TEST_BINS)
+
 unit-tests: CFLAGS = $(UNIT_TEST_CFLAGS)
-unit-tests: test-build-dir $(OBJ) $(UNITY_OBJ) $(UNIT_TEST_OBJS) $(UNIT_TEST_BINS) $(UNIT_TEST_RESULTS)
+unit-tests: build-unit-tests $(UNIT_TEST_RESULTS)
 	@echo ""
 	@echo "-------- RESULTS---------"
 	@echo ""

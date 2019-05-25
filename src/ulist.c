@@ -6,6 +6,8 @@
 #include <string.h>
 #include "ulist_api.h"
 
+#define MIN_ITEMS_PER_NODE (2u)
+
 #define GREEDY (1u)
 #define NOT_GREEDY (0u)
 
@@ -36,6 +38,7 @@ static ulist_node_t *_alloc_new_node(ulist_t *list)
     }
 
     memset(node, 0, sizeof(ulist_node_t));
+    list->nodes += 1;
     return node;
 }
 
@@ -266,18 +269,11 @@ static void _remove_item(ulist_t *list, access_params_t *params)
     }
 }
 
-// Find a specific data item by index and fill out an access_params_t instance
-static access_params_t *_find_item_by_index(ulist_t *list, unsigned long long index,
-    access_params_t *access_params)
+static void _forward_crawl(ulist_t *list, unsigned long long index,
+    access_params_t *params)
 {
-    if ((NULL == access_params) || ((index + 1) > list->num_items))
-    {
-        return NULL;
-    }
-
     ulist_node_t *node = list->head;
     unsigned long long item_count = 0u;
-    size_t local_index;
 
     // Loop through nodes, incrementing item count until we reach target item
     while (NULL != node)
@@ -293,21 +289,62 @@ static access_params_t *_find_item_by_index(ulist_t *list, unsigned long long in
     }
 
     // Item index within node
-    local_index = node->used - (item_count - index);
+    params->local_index = node->used - (item_count - index);
+    params->node = node;
+}
 
-    if (NULL == node)
+static void _backward_crawl(ulist_t *list, unsigned long long index,
+    access_params_t *params)
+{
+    ulist_node_t *node = list->tail;
+    unsigned long long item_count = list->num_items;
+
+    // Loop through nodes, incrementing item count until we reach target item
+    while (NULL != node)
+    {
+        item_count -= node->used;
+        if (item_count <= index)
+        {
+            // Found/exceeded target item
+            break;
+        }
+
+        node = node->previous;
+    }
+
+    // Item index within node
+    params->local_index = index - item_count;
+    params->node = node;
+}
+
+// Find a specific data item by index and fill out an access_params_t instance
+static access_params_t *_find_item_by_index(ulist_t *list, unsigned long long index,
+    access_params_t *access_params)
+{
+    if ((NULL == access_params) || ((index + 1) > list->num_items))
     {
         return NULL;
     }
 
-    access_params->node = (ulist_node_t *)node;
-    access_params->local_index = local_index;
+    size_t avg_items_per_node = list->num_items / list->nodes;
+    size_t roughly_half = (list->nodes / 2u) * avg_items_per_node;
+
+    if (index <= roughly_half)
+    {
+        _forward_crawl(list, index, access_params);
+    }
+    else
+    {
+        _backward_crawl(list, index, access_params);
+    }
+
+    //_forward_crawl(list, index, access_params);
     return access_params;
 }
 
 static ulist_status_e _new_tail_item(ulist_t *list, void *item)
 {
-    access_params_t params = { .node=list->tail, .local_index=list->tail->used };
+    access_params_t params = {.node=list->tail, .local_index=list->tail->used};
 
     // Tail node is full, create new
     if (list->tail->used == list->items_per_node)
@@ -351,6 +388,11 @@ ulist_status_e ulist_create(ulist_t *list, size_t item_size_bytes,
     size_t items_per_node)
 {
     if ((NULL == list) || (0u == item_size_bytes) || (0u == items_per_node))
+    {
+        return ULIST_INVALID_PARAM;
+    }
+
+    if (items_per_node < MIN_ITEMS_PER_NODE)
     {
         return ULIST_INVALID_PARAM;
     }
