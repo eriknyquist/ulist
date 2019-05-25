@@ -2,7 +2,8 @@
 
 #include "ulist_api.h"
 
-#define NODE_SIZE (9u)
+#define MIN_ITEMS_PER_NODE (2u)
+#define NODE_SIZE MIN_ITEMS_PER_NODE
 
 static ulist_t list;
 
@@ -27,7 +28,12 @@ void test_create_size_zero(void)
 
 void test_create_items_zero(void)
 {
-    TEST_ASSERT_EQUAL(ULIST_INVALID_PARAM, ulist_create(&list, sizeof(int), 0));
+    TEST_ASSERT_EQUAL(ULIST_INVALID_PARAM, ulist_create(&list, sizeof(int), 0u));
+}
+
+void test_create_min_items_per_node(void)
+{
+    TEST_ASSERT_EQUAL(ULIST_INVALID_PARAM, ulist_create(&list, sizeof(int), 1u));
 }
 
 void test_create_success(void)
@@ -45,6 +51,7 @@ int main(void)
     RUN_TEST(test_create_list_null);
     RUN_TEST(test_create_size_zero);
     RUN_TEST(test_create_items_zero);
+    RUN_TEST(test_create_min_items_per_node);
     RUN_TEST(test_create_success);
     return UNITY_END();
 }

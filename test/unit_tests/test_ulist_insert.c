@@ -2,7 +2,7 @@
 
 #include "ulist_api.h"
 
-#define NODE_SIZE (3u)
+#define NODE_SIZE (4u)
 
 static ulist_t list;
 
