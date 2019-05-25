@@ -66,7 +66,7 @@ static void _balance_nodes(ulist_t *list, ulist_node_t *dest,
     {
         // Move data in dest to make room
         size_t dest_size = dest->used * list->item_size_bytes;
-        memmove(dest->data + bytes_to_move, dest, dest_size);
+        memmove(dest->data + bytes_to_move, dest->data, dest_size);
 
         // Move data from src to dest
         size_t src_index = src->used - items_to_move;
