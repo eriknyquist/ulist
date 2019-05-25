@@ -1,5 +1,7 @@
-/*
- * ulist.c
+/**
+ * @file   ulist.c
+ * @author Erik Nyquist
+ * @brief  Unrolled linked-list implementation
  */
 #include <string.h>
 #include "ulist_api.h"
