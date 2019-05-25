@@ -36,6 +36,7 @@ void test_create_success(void)
     TEST_ASSERT_NOT_EQUAL(NULL, list.head);
     TEST_ASSERT_NOT_EQUAL(NULL, list.tail);
     TEST_ASSERT_EQUAL(0, list.num_items);
+    TEST_ASSERT_EQUAL(ULIST_OK, ulist_destroy(&list));
 }
 
 int main(void)
