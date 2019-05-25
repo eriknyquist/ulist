@@ -4,6 +4,12 @@
 #include <string.h>
 #include "ulist_api.h"
 
+#define GREEDY (1u)
+#define NOT_GREEDY (0u)
+
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))
+
 #define NODE_ALLOC_SIZE(list) (sizeof(ulist_node_t) +       \
                                    (list->item_size_bytes * \
                                    list->items_per_node))
@@ -15,6 +21,7 @@ typedef struct {
     ulist_node_t *node;
     size_t local_index;
 } access_params_t;
+
 
 // Allocate a new node and return a pointer to it
 static ulist_node_t *_alloc_new_node(ulist_t *list)
@@ -28,6 +35,60 @@ static ulist_node_t *_alloc_new_node(ulist_t *list)
 
     memset(node, 0, sizeof(ulist_node_t));
     return node;
+}
+
+// Move items from src to dest until the number of items in dest has reached
+// more than half. dest and src are expected to be connected.
+static void _balance_nodes(ulist_t *list, ulist_node_t *dest,
+        ulist_node_t *src, unsigned greedy)
+{
+    size_t items_to_move;
+
+    if (greedy && ((src->used + dest->used) <= list->items_per_node))
+    {
+        // Data from both nodes can fit into one node
+        items_to_move = src->used;
+
+    }
+    else
+    {
+        size_t half_items = list->items_per_node / 2u;
+        size_t items_needed = (half_items + 1u) - dest->used;
+        items_to_move = MIN(items_needed, src->used);
+    }
+
+    size_t bytes_to_move = items_to_move * list->item_size_bytes;
+
+    // Direction of copying
+    unsigned head_to_tail = (src->next == dest) ? 1u : 0u;
+
+    if (head_to_tail)
+    {
+        // Move data in dest to make room
+        size_t dest_size = dest->used * list->item_size_bytes;
+        memmove(dest->data + bytes_to_move, dest, dest_size);
+
+        // Move data from src to dest
+        size_t src_index = src->used - items_to_move;
+        memcpy(dest->data, NODE_DATA(list, src, src_index), bytes_to_move);
+    }
+    else
+    {
+        // Move data from src to dest
+        memcpy(NODE_DATA(list, dest, dest->used - 1), src->data, bytes_to_move);
+
+        if (items_to_move < src->used)
+        {
+            // Remaining data in src, move it back to cover free space
+            memmove(
+                src->data,
+                src->data + bytes_to_move,
+                (src->used - items_to_move) * list->item_size_bytes);
+        }
+    }
+
+    dest->used += items_to_move;
+    src->used -= items_to_move;
 }
 
 static void _add_to_nonfull_node(ulist_t *list, access_params_t *params,
@@ -83,22 +144,12 @@ static ulist_node_t *_add_to_full_node(ulist_t *list, access_params_t *params,
         list->tail = new;
     }
 
-    size_t items_to_move = params->node->used / 2u;
-    size_t bytes_to_move = items_to_move * list->item_size_bytes;
-    size_t move_start_index = params->node->used - items_to_move;
+    _balance_nodes(list, new, params->node, NOT_GREEDY);
 
-    // Move half of the full node's items to the new node
-    memcpy(new->data,
-        NODE_DATA(list, params->node, move_start_index),
-        bytes_to_move);
-
-    new->used += items_to_move;
-    params->node->used -= items_to_move;
-
-    if (params->local_index >= move_start_index)
+    if (params->local_index > params->node->used)
     {
         // item must be inserted in new node
-        size_t new_index = params->local_index - move_start_index;
+        size_t new_index = params->local_index - params->node->used;
         params->node = new;
         params->local_index = new_index;
     }
@@ -130,6 +181,58 @@ static ulist_status_e _insert_item(ulist_t *list, access_params_t *params,
     list->num_items += 1u;
 
     return ULIST_OK;
+}
+
+static void _delete_node(ulist_t *list, ulist_node_t *node)
+{
+
+}
+
+static void _remove_item(ulist_t *list, access_params_t *params)
+{
+    if (params->local_index != (params->node->used - 1u))
+    {
+        // Need to move some items into the freed space
+        size_t bytes_to_move = (params->node->used - 1u) - params->local_index;
+
+        memmove(
+            NODE_DATA(list, params->node, params->local_index + 1u),
+            NODE_DATA(list, params->node, params->local_index),
+            bytes_to_move);
+    }
+
+    params->node->used -= 1;
+    size_t half_items = list->items_per_node / 2u;
+
+    if (params->node->used >= half_items)
+    {
+        // Node is half full or more, nothing else to do
+        return;
+    }
+
+    ulist_node_t *src_node = params->node->next;
+
+    if ((NULL == params->node->next) && (NULL == params->node->previous))
+    {
+        // Only node in the list, nothing else to do
+        return;
+    }
+    else if (NULL == params->node->next)
+    {
+        // Node is tail
+        src_node = params->node->previous;
+    }
+
+    // Move items from source node into current node
+    _balance_nodes(list, params->node, src_node, GREEDY);
+
+    if (src_node->used == 0u)
+    {
+        // Source node is empty
+        _delete_node(list, src_node);
+    }
+
+    list->num_items -= 1u;
 }
 
 // Find a specific data item by index and fill out an access_params_t instance
@@ -318,5 +421,34 @@ ulist_status_e ulist_get_item(ulist_t *list, unsigned long long index, void *ite
     void *data = NODE_DATA(list, params.node, params.local_index);
     memcpy(item, data, list->item_size_bytes);
 
+    return ULIST_OK;
+}
+
+ulist_status_e ulist_pop_item(ulist_t *list, unsigned long long index, void *item)
+{
+    if ((NULL == list) || (NULL == list->tail))
+    {
+        return ULIST_INVALID_PARAM;
+    }
+
+    if (index >= list->num_items)
+    {
+        return ULIST_INDEX_OUT_OF_RANGE;
+    }
+
+    access_params_t params;
+
+    if (_find_item_by_index(list, index, &params) == NULL)
+    {
+        return ULIST_ERROR_INTERNAL;
+    }
+
+    if (NULL != item)
+    {
+        void *data = NODE_DATA(list, params.node, params.local_index);
+        memcpy(item, data, list->item_size_bytes);
+    }
+
+    _remove_item(list, &params);
     return ULIST_OK;
 }
