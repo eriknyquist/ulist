@@ -53,7 +53,7 @@ static void _balance_nodes(ulist_t *list, ulist_node_t *dest,
     else
     {
         size_t half_items = list->items_per_node / 2u;
-        size_t items_needed = (half_items + 1u) - dest->used;
+        size_t items_needed = half_items - dest->used;
         items_to_move = MIN(items_needed, src->used);
     }
 
@@ -75,7 +75,7 @@ static void _balance_nodes(ulist_t *list, ulist_node_t *dest,
     else
     {
         // Move data from src to dest
-        memcpy(NODE_DATA(list, dest, dest->used - 1), src->data, bytes_to_move);
+        memcpy(NODE_DATA(list, dest, dest->used), src->data, bytes_to_move);
 
         if (items_to_move < src->used)
         {
@@ -185,7 +185,26 @@ static ulist_status_e _insert_item(ulist_t *list, access_params_t *params,
 
 static void _delete_node(ulist_t *list, ulist_node_t *node)
 {
+    if (node->next)
+    {
+        node->next->previous = node->previous;
+    }
 
+    if (node->previous)
+    {
+        node->previous->next = node->next;
+    }
+
+    if (list->head == node)
+    {
+        list->head = node->next;
+    }
+    else if (list->tail == node)
+    {
+        list->tail = node->previous;
+    }
+
+    free(node);
 }
 
 static void _remove_item(ulist_t *list, access_params_t *params)
@@ -193,20 +212,21 @@ static void _remove_item(ulist_t *list, access_params_t *params)
     if (params->local_index != (params->node->used - 1u))
     {
         // Need to move some items into the freed space
-        size_t bytes_to_move = (params->node->used - 1u) - params->local_index;
+        size_t items_to_move = (params->node->used - 1u) - params->local_index;
+        size_t bytes_to_move = items_to_move * list->item_size_bytes;
 
         memmove(
-            NODE_DATA(list, params->node, params->local_index + 1u),
             NODE_DATA(list, params->node, params->local_index),
+            NODE_DATA(list, params->node, params->local_index + 1u),
             bytes_to_move);
     }
 
     params->node->used -= 1;
     size_t half_items = list->items_per_node / 2u;
 
-    if (params->node->used >= half_items)
+    if (params->node->used > half_items)
     {
-        // Node is half full or more, nothing else to do
+        // Node is over half full, nothing else to do
         return;
     }
 

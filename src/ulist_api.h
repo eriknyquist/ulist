@@ -38,5 +38,6 @@ ulist_status_e ulist_destroy(ulist_t *list);
 ulist_status_e ulist_append_item(ulist_t *list, void *item);
 ulist_status_e ulist_insert_item(ulist_t *list, unsigned long long index, void *item);
 ulist_status_e ulist_get_item(ulist_t *list, unsigned long long index, void *item);
+ulist_status_e ulist_pop_item(ulist_t *list, unsigned long long index, void *item);
 
 #endif
