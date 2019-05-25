@@ -30,18 +30,33 @@ static ulist_node_t *_alloc_new_node(ulist_t *list)
     return node;
 }
 
-/*
-static void _move_items(ulist_t *list, ulist_node_t *dest,
-    ulist_node_t *src, size_t)
+static void _add_to_nonfull_node(ulist_t *list, access_params_t *params,
+    void *item)
 {
-    size_t half = list->items_per_node / 2u;
+    // Target location to copy new item to
+    char *target = NODE_DATA(list, params->node, params->local_index);
 
+    // Check if existing items need to be shifted to make room
+    if (params->local_index != params->node->used)
+    {
+        // Number of bytes to be moved
+        size_t bytes_to_move = (params->node->used - params->local_index)
+            * list->item_size_bytes;
+
+        char *dest = target + list->item_size_bytes;
+
+        // Move items to make room for new items
+        memmove(dest, target, bytes_to_move);
+    }
+
+    // Copy item to target location
+    memcpy(target, item, list->item_size_bytes);
+    params->node->used += 1u;
 }
-*/
 
-// Add a new node after the given node, move half of the full node's contents
-// into the new node, and insert the item at the requested index
-static ulist_node_t *_new_node_after(ulist_t *list, ulist_node_t *full_node,
+// Add a new node after the given node, and move half of the full node's
+// contents into the new node.
+static ulist_node_t *_add_to_full_node(ulist_t *list, access_params_t *params,
     void *item)
 {
     ulist_node_t *new = NULL;
@@ -52,68 +67,67 @@ static ulist_node_t *_new_node_after(ulist_t *list, ulist_node_t *full_node,
     }
 
     // Make sure new node is connected to full node's old neighbour
-    if (full_node->next)
+    if (params->node->next)
     {
-        full_node->next->previous = new;
+        params->node->next->previous = new;
     }
-    new->next = full_node->next;
+    new->next = params->node->next;
 
     // Connect new node to full node
-    full_node->next = new;
-    new->previous = full_node;
+    params->node->next = new;
+    new->previous = params->node;
 
     // Check if new node is tail
-    if (list->tail == full_node)
+    if (list->tail == params->node)
     {
         list->tail = new;
     }
+
+    size_t items_to_move = params->node->used / 2u;
+    size_t bytes_to_move = items_to_move * list->item_size_bytes;
+    size_t move_start_index = params->node->used - items_to_move;
+
+    // Move half of the full node's items to the new node
+    memcpy(new->data,
+        NODE_DATA(list, params->node, move_start_index),
+        bytes_to_move);
+
+    new->used += items_to_move;
+    params->node->used -= items_to_move;
+
+    if (params->local_index >= move_start_index)
+    {
+        // item must be inserted in new node
+        size_t new_index = params->local_index - move_start_index;
+        params->node = new;
+        params->local_index = new_index;
+    }
+
+    _add_to_nonfull_node(list, params, item);
 
     return new;
 }
 
 // Add item to node, creating a new node if required
-static ulist_status_e _insert_item(ulist_t *list, ulist_node_t *node,
-    size_t index, void *item)
+static ulist_status_e _insert_item(ulist_t *list, access_params_t *params,
+    void *item)
 {
-    ulist_node_t *new = node;
+    ulist_node_t *new = params->node;
 
     // Current node is full, create a new one
-    if (node->used == list->items_per_node)
+    if (params->node->used == list->items_per_node)
     {
-        if ((new = _new_node_after(list, node, item)) == NULL)
+        if ((new = _add_to_full_node(list, params, item)) == NULL)
         {
             return ULIST_ERROR_MEM;
         }
     }
-
-    char *target = NODE_DATA(list, node, index);
-
-    // Check if existing items need to be shifted to make room
-    if (((node == new ) && (index != node->used)) || (node != new))
+    else
     {
-        // Number of bytes to be moved
-        size_t bytes_to_move = (node->used - index - 1) * list->item_size_bytes;
-
-            // Move last item to new location
-            memcpy(NODE_DATA(list, new, new->used),
-                    NODE_DATA(list, node, index) + bytes_to_move,
-                    list->item_size_bytes);
-
-        if (bytes_to_move)
-        {
-            char *dest = target + list->item_size_bytes;
-
-            // Move remaining items to make room for new item
-            memmove(dest, target, bytes_to_move);
-        }
+        _add_to_nonfull_node(list, params, item);
     }
 
-    // Copy item to target location
-    memcpy(target, item, list->item_size_bytes);
-
-    // Increment counters
-    new->used += 1;
-    list->num_items += 1;
+    list->num_items += 1u;
 
     return ULIST_OK;
 }
@@ -179,7 +193,7 @@ static ulist_status_e _new_tail_item(ulist_t *list, void *item)
 
     }
 
-    return _insert_item(list, params.node, params.local_index, item);
+    return _insert_item(list, &params, item);
 }
 
 static int _check_write_index(ulist_t *list, unsigned long long index)
@@ -269,7 +283,7 @@ ulist_status_e ulist_insert_item(ulist_t *list, unsigned long long index, void *
         return ULIST_ERROR_INTERNAL;
     }
 
-    return _insert_item(list, params.node, params.local_index, item);
+    return _insert_item(list, &params, item);
 }
 
 ulist_status_e ulist_append_item(ulist_t *list, void *item)
