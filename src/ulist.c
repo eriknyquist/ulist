@@ -343,6 +343,8 @@ static access_params_t *_find_item_by_index(ulist_t *list, unsigned long long in
     return access_params;
 }
 
+// Special case for tail item-- instead of handling this in ulist_insert_item,
+// we can avoid a lot of checks and do things a bit quicker in this function
 static ulist_status_e _new_tail_item(ulist_t *list, void *item)
 {
     access_params_t params = {.node=list->tail, .local_index=list->tail->used};
@@ -365,7 +367,9 @@ static ulist_status_e _new_tail_item(ulist_t *list, void *item)
 
     }
 
-    return _insert_item(list, &params, item);
+    _add_to_nonfull_node(list, &params, item);
+    list->num_items += 1;
+    return ULIST_OK;
 }
 
 static int _check_write_index(ulist_t *list, unsigned long long index)
@@ -447,8 +451,7 @@ ulist_status_e ulist_insert_item(ulist_t *list, unsigned long long index, void *
         return ULIST_INDEX_OUT_OF_RANGE;
     }
 
-    // Special case for index of list->num_items, which is technically
-    // out-of-range; new item becomes tail item
+    // Special case for index of list->num_items, call _new_tail_item
     if (index == list->num_items)
     {
         return _new_tail_item(list, item);
