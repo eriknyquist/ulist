@@ -220,6 +220,7 @@ static void _delete_node(ulist_t *list, ulist_node_t *node)
     }
 
     free(node);
+    list->nodes -= 1u;
 }
 
 static void _remove_item(ulist_t *list, access_params_t *params)
