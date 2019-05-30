@@ -12,8 +12,8 @@
 typedef enum {
     ULIST_OK,                 // Success
     ULIST_INVALID_PARAM,      // Invalid parameter passed to function
-    ULIST_ALREADY_INIT,       // ulist_create called more than once for one list
-	ULIST_INDEX_OUT_OF_RANGE, // Invalid list index provided
+    ULIST_ALREADY_DESTROYED,  // ulist_destroy called again on a destroyed list
+    ULIST_INDEX_OUT_OF_RANGE, // Invalid list index provided
     ULIST_ERROR_MEM,          // Memory allocation failed
     ULIST_ERROR_INTERNAL,     // Unspecified internal error
 } ulist_status_e;

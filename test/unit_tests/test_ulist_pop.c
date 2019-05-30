@@ -6,27 +6,6 @@
 
 static ulist_t list;
 
-void _dump_list(ulist_t *list)
-{
-    int num = 1;
-    ulist_node_t *node = list->head;
-
-    while (NULL != node)
-    {
-        printf("Node %d\n", num);
-        int *data = (int *)node->data;
-
-        for (int i = 0; i < node->used; i++)
-        {
-            printf("  %d (%p)\n", data[i], data + i);
-        }
-        printf("\n");
-
-        num += 1;
-        node = node->next;
-    }
-}
-
 void setUp(void)
 {
    TEST_ASSERT_EQUAL(ULIST_OK, ulist_create(&list, sizeof(int), NODE_SIZE));

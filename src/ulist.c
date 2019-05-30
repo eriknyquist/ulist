@@ -423,6 +423,11 @@ ulist_status_e ulist_destroy(ulist_t *list)
         return ULIST_INVALID_PARAM;
     }
 
+    if (NULL == list->head)
+    {
+        return ULIST_ALREADY_DESTROYED;
+    }
+
     if (list->head && list->tail)
     {
         node = list->head;
