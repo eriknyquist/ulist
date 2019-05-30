@@ -5,9 +5,9 @@
 #include <stdio.h>
 #include "ulist_api.h"
 
-#define ITEMS_PER_NODE (4u)
+#define ITEMS_PER_NODE (32u)
 
-#define TESTLIST_SIZE (12u)
+#define TESTLIST_SIZE (1000000u)
 
 void _dump_list(ulist_t *list)
 {
@@ -43,74 +43,23 @@ int main(int argc, char *argv[])
 
     for (int i = 0; i < TESTLIST_SIZE; i++)
     {
-        int val = i + 100;
-        err = ulist_append_item(&list, &val);
+        err = ulist_append_item(&list, &i);
         if (err != ULIST_OK)
         {
             return err;
         }
     }
 
-    _dump_list(&list);
-
-    int val = 1111;
-    err = ulist_insert_item(&list, 2, &val);
-    if (err != ULIST_OK)
+    for (int i = 0; i < TESTLIST_SIZE; i++)
     {
-        return err;
+        int val;
+
+        err = ulist_get_item(&list, i, &val);
+        if (err != ULIST_OK)
+        {
+            return err;
+        }
     }
-
-    printf("--------------\n\n");
-    _dump_list(&list);
-
-    val = 2222;
-    err = ulist_insert_item(&list, 5, &val);
-    if (err != ULIST_OK)
-    {
-        return err;
-    }
-
-    printf("--------------\n\n");
-    _dump_list(&list);
-
-    val = 3333;
-    err = ulist_insert_item(&list, 9, &val);
-    if (err != ULIST_OK)
-    {
-        return err;
-    }
-
-    printf("--------------\n\n");
-    _dump_list(&list);
-
-    val = 4444;
-    err = ulist_insert_item(&list, 11, &val);
-    if (err != ULIST_OK)
-    {
-        return err;
-    }
-
-    printf("--------------\n\n");
-    _dump_list(&list);
-
-    err = ulist_pop_item(&list, 2, NULL);
-    if (err != ULIST_OK)
-    {
-        return err;
-    }
-
-    printf("--------------\n\n");
-    printf("--------------\n\n");
-    _dump_list(&list);
-
-    err = ulist_pop_item(&list, 2, NULL);
-    if (err != ULIST_OK)
-    {
-        return err;
-    }
-
-    printf("--------------\n\n");
-    _dump_list(&list);
 
     if ((err = ulist_destroy(&list)) != ULIST_OK)
     {

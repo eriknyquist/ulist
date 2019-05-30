@@ -263,7 +263,7 @@ static void _remove_item(ulist_t *list, access_params_t *params)
     // Move items from source node into current node
     _balance_nodes(list, params->node, src_node, GREEDY);
 
-    if (src_node->used == 0u)
+    if (0u == src_node->used)
     {
         // Source node is empty
         _delete_node(list, src_node);
