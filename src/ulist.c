@@ -474,12 +474,12 @@ ulist_status_e ulist_insert_item(ulist_t *list, unsigned long long index, void *
 
 ulist_status_e ulist_append_item(ulist_t *list, void *item)
 {
-    if (NULL == list)
+    if ((NULL == list) || (NULL == item))
     {
         return ULIST_INVALID_PARAM;
     }
 
-    return ulist_insert_item(list, list->num_items, item);
+    return _new_tail_item(list, item);
 }
 
 ulist_status_e ulist_get_item(ulist_t *list, unsigned long long index, void *item)
