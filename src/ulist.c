@@ -377,6 +377,9 @@ static int _check_write_index(ulist_t *list, unsigned long long index)
     return (0u == list->num_items) ? 0u == index : index <= list->num_items;
 }
 
+/**
+ * @see ulist_api.h
+ */
 ulist_status_e ulist_node_size_bytes(ulist_t *list, size_t *size_bytes)
 {
     if ((NULL == list) || (NULL == size_bytes))
@@ -389,6 +392,9 @@ ulist_status_e ulist_node_size_bytes(ulist_t *list, size_t *size_bytes)
     return ULIST_OK;
 }
 
+/**
+ * @see ulist_api.h
+ */
 ulist_status_e ulist_create(ulist_t *list, size_t item_size_bytes,
     size_t items_per_node)
 {
@@ -405,6 +411,7 @@ ulist_status_e ulist_create(ulist_t *list, size_t item_size_bytes,
     memset(list, 0, sizeof(ulist_t));
     list->item_size_bytes = item_size_bytes;
     list->items_per_node = items_per_node;
+    list->current = NULL;
 
     if ((list->head = _alloc_new_node(list)) == NULL)
     {
@@ -415,6 +422,9 @@ ulist_status_e ulist_create(ulist_t *list, size_t item_size_bytes,
     return ULIST_OK;
 }
 
+/**
+ * @see ulist_api.h
+ */
 ulist_status_e ulist_destroy(ulist_t *list)
 {
     ulist_node_t *node, *old;
@@ -444,6 +454,9 @@ ulist_status_e ulist_destroy(ulist_t *list)
     return ULIST_OK;
 }
 
+/**
+ * @see ulist_api.h
+ */
 ulist_status_e ulist_insert_item(ulist_t *list, unsigned long long index, void *item)
 {
     if ((NULL == list) || (NULL == list->tail) || (NULL == item))
@@ -472,6 +485,9 @@ ulist_status_e ulist_insert_item(ulist_t *list, unsigned long long index, void *
     return _insert_item(list, &params, item);
 }
 
+/**
+ * @see ulist_api.h
+ */
 ulist_status_e ulist_append_item(ulist_t *list, void *item)
 {
     if ((NULL == list) || (NULL == item))
@@ -482,7 +498,11 @@ ulist_status_e ulist_append_item(ulist_t *list, void *item)
     return _new_tail_item(list, item);
 }
 
-ulist_status_e ulist_get_item(ulist_t *list, unsigned long long index, void *item)
+/**
+ * @see ulist_api.h
+ */
+ulist_status_e ulist_get_item(ulist_t *list, unsigned long long index,
+    void *item)
 {
     if ((NULL == list) || (NULL == list->tail) || (NULL == item))
     {
@@ -507,6 +527,131 @@ ulist_status_e ulist_get_item(ulist_t *list, unsigned long long index, void *ite
     return ULIST_OK;
 }
 
+/**
+ * @see ulist_api.h
+ */
+ulist_status_e ulist_get_next_item(ulist_t *list, void *item)
+{
+    if ((NULL == list) || (NULL == item))
+    {
+        return ULIST_INVALID_PARAM;
+    }
+
+    // No iteration start index set-- start at the head
+    if (NULL == list->current)
+    {
+        list->current = list->head;
+        list->local_index = 0u;
+    }
+
+    // Reached the end of this node-- jump to the next one
+    if (list->local_index == list->current->used)
+    {
+        // No more items
+        if (NULL == list->current->next)
+        {
+            list->current = NULL;
+            return ULIST_END;
+        }
+
+        list->current = list->current->next;
+        list->local_index = 0u;
+    }
+
+    void *data = NODE_DATA(list, list->current, list->local_index);
+    memcpy(item, data, list->item_size_bytes);
+    list->local_index += 1u;
+
+    return ULIST_OK;
+}
+
+/**
+ * @see ulist_api.h
+ */
+ulist_status_e ulist_get_previous_item(ulist_t *list, void *item)
+{
+    static int _end_reached = 0;
+
+    if ((NULL == list) || (NULL == item))
+    {
+        return ULIST_INVALID_PARAM;
+    }
+
+    if (1 == _end_reached)
+    {
+        _end_reached = 0;
+        return ULIST_END;
+    }
+
+    // No iteration start index set-- start at the tail
+    if (NULL == list->current)
+    {
+        // List is empty
+        if (0u == list->tail->used)
+        {
+            return ULIST_END;
+        }
+
+        list->current = list->tail;
+        list->local_index = list->tail->used - 1u;
+    }
+
+    void *data = NODE_DATA(list, list->current, list->local_index);
+    memcpy(item, data, list->item_size_bytes);
+
+    // Reached the end of this node-- jump to the previous one
+    if (0u == list->local_index)
+    {
+        // No more items
+        if (NULL == list->current->previous)
+        {
+            list->current = NULL;
+            _end_reached = 1;
+            return ULIST_OK;
+        }
+
+        list->current = list->current->previous;
+        list->local_index = list->current->used - 1u;
+    }
+    else
+    {
+        list->local_index -= 1u;
+    }
+
+    return ULIST_OK;
+}
+
+/**
+ * @see ulist_api.h
+ */
+ulist_status_e ulist_set_iteration_start_index(ulist_t *list,
+    unsigned long long index)
+{
+    if (NULL == list)
+    {
+        return ULIST_INVALID_PARAM;
+    }
+
+    if (index >= list->num_items)
+    {
+        return ULIST_INDEX_OUT_OF_RANGE;
+    }
+
+    access_params_t params;
+
+    if (_find_item_by_index(list, index, &params) == NULL)
+    {
+        return ULIST_ERROR_INTERNAL;
+    }
+
+    list->local_index = params.local_index;
+    list->current = params.node;
+    return ULIST_OK;
+}
+
+/**
+ * @see ulist_api.h
+ */
 ulist_status_e ulist_pop_item(ulist_t *list, unsigned long long index, void *item)
 {
     if ((NULL == list) || (NULL == list->tail))

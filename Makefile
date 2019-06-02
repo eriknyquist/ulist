@@ -46,6 +46,8 @@ $(TEST_BUILD_DIR)/%: $(TEST_BUILD_DIR)/%.o
 $(TEST_BUILD_DIR)/%.txt: $(TEST_BUILD_DIR)/%
 	@echo "Running $<"
 	-@./$< > $@ 2>&1
+	@cat $@
+	@echo ""
 
 debug: CFLAGS = $(DEBUG_CFLAGS)
 debug: $(TEST_MAIN)
