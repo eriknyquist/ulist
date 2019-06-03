@@ -5,15 +5,34 @@
 #define NODE_SIZE (5u)
 
 static ulist_t list;
+static int _unexpected_value_found;
+static int _handler_invocations;
 
 void setUp(void)
 {
    TEST_ASSERT_EQUAL(ULIST_OK, ulist_create(&list, sizeof(int), NODE_SIZE));
+   _unexpected_value_found = 0;
+   _handler_invocations = 0;
 }
 
 void tearDown(void)
 {
    TEST_ASSERT_EQUAL(ULIST_OK, ulist_destroy(&list));
+}
+
+static int _value_check_handler(unsigned long long index, void *item)
+{
+    int *val = (int *)item;
+
+    _handler_invocations += 1;
+
+    if (*val != index)
+    {
+        _unexpected_value_found = 1;
+        return 1;
+    }
+
+    return 0;
 }
 
 void test_set_iteration_index_list_null(void)
@@ -128,6 +147,38 @@ void test_set_iteration_index_get_previous(void)
     TEST_ASSERT_EQUAL(list.num_items, num_items);
 }
 
+void test_set_iteration_index_iterate_forwards(void)
+{
+    int num_items = 1000;
+    unsigned long long start_index = 434;
+
+    for (int i = 0; i < num_items; i++)
+    {
+        TEST_ASSERT_EQUAL(ULIST_OK, ulist_append_item(&list, &i));
+    }
+
+    TEST_ASSERT_EQUAL(ULIST_OK, ulist_set_iteration_start_index(&list, start_index));
+    TEST_ASSERT_EQUAL(ULIST_OK, ulist_iterate_forwards(&list, _value_check_handler));
+    TEST_ASSERT_EQUAL(0, _unexpected_value_found);
+    TEST_ASSERT_EQUAL(num_items - start_index, _handler_invocations);
+}
+
+void test_set_iteration_index_iterate_backwards(void)
+{
+    int num_items = 1000;
+    unsigned long long start_index = 434;
+
+    for (int i = 0; i < num_items; i++)
+    {
+        TEST_ASSERT_EQUAL(ULIST_OK, ulist_append_item(&list, &i));
+    }
+
+    TEST_ASSERT_EQUAL(ULIST_OK, ulist_set_iteration_start_index(&list, start_index));
+    TEST_ASSERT_EQUAL(ULIST_OK, ulist_iterate_backwards(&list, _value_check_handler));
+    TEST_ASSERT_EQUAL(0, _unexpected_value_found);
+    TEST_ASSERT_EQUAL(start_index + 1, _handler_invocations);
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -136,5 +187,7 @@ int main(void)
     RUN_TEST(test_set_iteration_index_out_of_range);
     RUN_TEST(test_set_iteration_index_get_next);
     RUN_TEST(test_set_iteration_index_get_previous);
+    RUN_TEST(test_set_iteration_index_iterate_forwards);
+    RUN_TEST(test_set_iteration_index_iterate_backwards);
     return UNITY_END();
 }

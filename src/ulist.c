@@ -624,6 +624,116 @@ ulist_status_e ulist_get_previous_item(ulist_t *list, void *item)
 /**
  * @see ulist_api.h
  */
+ulist_status_e ulist_iterate_forwards(ulist_t *list, ulist_handler_t handler)
+{
+    if ((NULL == list) || (NULL == handler))
+    {
+        return ULIST_INVALID_PARAM;
+    }
+
+    if (0u == list->num_items)
+    {
+        return ULIST_OK;
+    }
+
+    unsigned long long index = list->index;
+    ulist_node_t *node = list->current;
+    size_t local_index = list->local_index;
+
+    // No iteration start index set-- start at the head
+    if (NULL == node)
+    {
+        node = list->head;
+        local_index = 0u;
+        index = 0u;
+    }
+
+    while (NULL != node)
+    {
+        if (handler(index, NODE_DATA(list, node, local_index)) > 0)
+        {
+            break;
+        }
+
+        if ((node->used - 1u) == local_index)
+        {
+            if (NULL == node->next)
+            {
+                break;
+            }
+
+            node = node->next;
+            local_index = 0u;
+        }
+        else
+        {
+            local_index += 1u;
+        }
+
+        index += 1u;
+    }
+
+    return  ULIST_OK;
+}
+
+/**
+ * @see ulist_api.h
+ */
+ulist_status_e ulist_iterate_backwards(ulist_t *list, ulist_handler_t handler)
+{
+    if ((NULL == list) || (NULL == handler))
+    {
+        return ULIST_INVALID_PARAM;
+    }
+
+    if (0u == list->num_items)
+    {
+        return ULIST_OK;
+    }
+
+    ulist_node_t *node = list->current;
+    size_t local_index = list->local_index;
+    unsigned long long index = list->index;
+
+    // No iteration start index set-- start at the tail
+    if (NULL == node)
+    {
+        node = list->tail;
+        local_index = list->tail->used - 1u;
+        index = list->num_items - 1u;
+    }
+
+    while (NULL != node)
+    {
+        if (handler(index, NODE_DATA(list, node, local_index)) > 0)
+        {
+            break;
+        }
+
+        if (0u == local_index)
+        {
+            if (NULL == node->previous)
+            {
+                break;
+            }
+
+            node = node->previous;
+            local_index = node->used - 1u;
+        }
+        else
+        {
+            local_index -= 1u;
+        }
+
+        index -= 1u;
+    }
+
+    return  ULIST_OK;
+}
+
+/**
+ * @see ulist_api.h
+ */
 ulist_status_e ulist_set_iteration_start_index(ulist_t *list,
     unsigned long long index)
 {
@@ -645,6 +755,7 @@ ulist_status_e ulist_set_iteration_start_index(ulist_t *list,
     }
 
     list->local_index = params.local_index;
+    list->index = index;
     list->current = params.node;
     return ULIST_OK;
 }

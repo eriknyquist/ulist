@@ -19,6 +19,16 @@ typedef enum {
     ULIST_ERROR_INTERNAL,     // Unspecified internal error
 } ulist_status_e;
 
+/**
+ * Callback for handling a single item during iteration
+ *
+ * @param    index    The index of current item
+ * @param    item     Pointer to current item
+ *
+ * @return   0 if iteration should continue. 1 if iteration should stop.
+ */
+typedef int (*ulist_handler_t)(unsigned long long index, void *item);
+
 /* Single node in a ulist */
 typedef struct ulist_node ulist_node_t;
 
@@ -41,6 +51,7 @@ typedef struct {
     // Iteration parameters
     ulist_node_t *current;
     size_t local_index;
+    unsigned long long index;
 } ulist_t;
 
 
@@ -164,6 +175,37 @@ ulist_status_e ulist_get_previous_item(ulist_t *list, void *item);
 ulist_status_e ulist_set_iteration_start_index(ulist_t *list,
     unsigned long long index);
 
+/**
+ * Iterate over items in the list until the tail item is reached, starting from
+ * the head item or from the item at the iteration start index (if set). This
+ * is the fastest way to search for an item in a #ulist_t, since unlike
+ * #ulist_get_item this function does not need to lookup the node for each item,
+ * and unlike #ulist_get_next_item this function does not automatically copy
+ * out the item data.
+ *
+ * @param    list      List instance
+ * @param    handler   Handler to be invoked for every item in the list. See
+ *                     #ulist_handler_t
+ *
+ * @return  ULIST_OK   if iteration was successful
+ */
+ulist_status_e ulist_iterate_forwards(ulist_t *list, ulist_handler_t handler);
+
+/**
+ * Iterate over items in the list until the head item is reached, starting from
+ * the tail item or from the item at the iteration start index (if set). This
+ * is the fastest way to search for an item in a #ulist_t, since unlike
+ * #ulist_get_item this function does not need to lookup the node for each item,
+ * and unlike #ulist_get_previous_item this function does not automatically copy
+ * out the item data.
+ *
+ * @param    list      List instance
+ * @param    handler   Handler to be invoked for every item in the list. See
+ *                     #ulist_handler_t
+ *
+ * @return  ULIST_OK   if iteration was successful
+ */
+ulist_status_e ulist_iterate_backwards(ulist_t *list, ulist_handler_t handler);
 
 /**
  * Fetch and remove an item from a specific index in a list.
