@@ -20,21 +20,6 @@ void tearDown(void)
    TEST_ASSERT_EQUAL(ULIST_OK, ulist_destroy(&list));
 }
 
-static int _value_check_handler(unsigned long long index, void *item)
-{
-    int *val = (int *)item;
-
-    _handler_invocations += 1;
-
-    if (*val != index)
-    {
-        _unexpected_value_found = 1;
-        return 1;
-    }
-
-    return 0;
-}
-
 void test_set_iteration_index_list_null(void)
 {
     int write_data = 7;
@@ -73,7 +58,7 @@ void test_set_iteration_index_get_next(void)
 
     TEST_ASSERT_EQUAL(list.num_items, num_items);
 
-    int read_val;
+    void *read_val;
     int num_iter_items = num_items - start_index;
 
     // Should be able to iterate until ULIST_END, and then it should reset so
@@ -84,7 +69,7 @@ void test_set_iteration_index_get_next(void)
     for (int i = 0; i < num_iter_items; i++)
     {
         TEST_ASSERT_EQUAL(ULIST_OK, ulist_get_next_item(&list, &read_val));
-        TEST_ASSERT_EQUAL(read_val, i + start_index);
+        TEST_ASSERT_EQUAL(*(int *)read_val, i + start_index);
     }
 
     TEST_ASSERT_EQUAL(ULIST_END, ulist_get_next_item(&list, &read_val));
@@ -96,7 +81,7 @@ void test_set_iteration_index_get_next(void)
     for (int i = 0; i < num_iter_items; i++)
     {
         TEST_ASSERT_EQUAL(ULIST_OK, ulist_get_next_item(&list, &read_val));
-        TEST_ASSERT_EQUAL(read_val, i + start_index);
+        TEST_ASSERT_EQUAL(*(int *)read_val, i + start_index);
     }
 
     TEST_ASSERT_EQUAL(ULIST_END, ulist_get_next_item(&list, &read_val));
@@ -117,7 +102,7 @@ void test_set_iteration_index_get_previous(void)
 
     TEST_ASSERT_EQUAL(list.num_items, num_items);
 
-    int read_val;
+    void *read_val;
     int num_iter_items = start_index + 1;
 
     // Should be able to iterate until ULIST_END, and then it should reset so
@@ -128,7 +113,7 @@ void test_set_iteration_index_get_previous(void)
     for (int i = 0; i < num_iter_items; i++)
     {
         TEST_ASSERT_EQUAL(ULIST_OK, ulist_get_previous_item(&list, &read_val));
-        TEST_ASSERT_EQUAL(read_val, start_index - i);
+        TEST_ASSERT_EQUAL(*(int *)read_val, start_index - i);
     }
 
     TEST_ASSERT_EQUAL(ULIST_END, ulist_get_previous_item(&list, &read_val));
@@ -140,43 +125,11 @@ void test_set_iteration_index_get_previous(void)
     for (int i = 0; i < num_iter_items; i++)
     {
         TEST_ASSERT_EQUAL(ULIST_OK, ulist_get_previous_item(&list, &read_val));
-        TEST_ASSERT_EQUAL(read_val, start_index - i);
+        TEST_ASSERT_EQUAL(*(int *)read_val, start_index - i);
     }
 
     TEST_ASSERT_EQUAL(ULIST_END, ulist_get_previous_item(&list, &read_val));
     TEST_ASSERT_EQUAL(list.num_items, num_items);
-}
-
-void test_set_iteration_index_iterate_forwards(void)
-{
-    int num_items = 1000;
-    unsigned long long start_index = 434;
-
-    for (int i = 0; i < num_items; i++)
-    {
-        TEST_ASSERT_EQUAL(ULIST_OK, ulist_append_item(&list, &i));
-    }
-
-    TEST_ASSERT_EQUAL(ULIST_OK, ulist_set_iteration_start_index(&list, start_index));
-    TEST_ASSERT_EQUAL(ULIST_OK, ulist_iterate_forwards(&list, _value_check_handler));
-    TEST_ASSERT_EQUAL(0, _unexpected_value_found);
-    TEST_ASSERT_EQUAL(num_items - start_index, _handler_invocations);
-}
-
-void test_set_iteration_index_iterate_backwards(void)
-{
-    int num_items = 1000;
-    unsigned long long start_index = 434;
-
-    for (int i = 0; i < num_items; i++)
-    {
-        TEST_ASSERT_EQUAL(ULIST_OK, ulist_append_item(&list, &i));
-    }
-
-    TEST_ASSERT_EQUAL(ULIST_OK, ulist_set_iteration_start_index(&list, start_index));
-    TEST_ASSERT_EQUAL(ULIST_OK, ulist_iterate_backwards(&list, _value_check_handler));
-    TEST_ASSERT_EQUAL(0, _unexpected_value_found);
-    TEST_ASSERT_EQUAL(start_index + 1, _handler_invocations);
 }
 
 int main(void)
@@ -187,7 +140,5 @@ int main(void)
     RUN_TEST(test_set_iteration_index_out_of_range);
     RUN_TEST(test_set_iteration_index_get_next);
     RUN_TEST(test_set_iteration_index_get_previous);
-    RUN_TEST(test_set_iteration_index_iterate_forwards);
-    RUN_TEST(test_set_iteration_index_iterate_backwards);
     return UNITY_END();
 }

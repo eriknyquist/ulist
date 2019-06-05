@@ -8,6 +8,7 @@
 
 #include <stdlib.h>
 
+
 /* Status codes for list operations */
 typedef enum {
     ULIST_OK,                 // Success
@@ -19,15 +20,6 @@ typedef enum {
     ULIST_ERROR_INTERNAL,     // Unspecified internal error
 } ulist_status_e;
 
-/**
- * Callback for handling a single item during iteration
- *
- * @param    index    The index of current item
- * @param    item     Pointer to current item
- *
- * @return   0 if iteration should continue. 1 if iteration should stop.
- */
-typedef int (*ulist_handler_t)(unsigned long long index, void *item);
 
 /* Single node in a ulist */
 typedef struct ulist_node ulist_node_t;
@@ -38,6 +30,7 @@ struct ulist_node {
     size_t used;
     char data[];
 };
+
 
 /* Single ulist instance */
 typedef struct {
@@ -136,30 +129,34 @@ ulist_status_e ulist_get_item(ulist_t *list, unsigned long long index,
  * item so we can just jump to the next node when a subsequent call requires it.
  *
  * @param    list            List instance
- * @param    item            Pointer to copy item data to
+ * @param    item            Pointer to copy item pointer to. Note that this
+ *                           pointer may become invalid if items are added to or
+ *                           removed from the list.
  *
  * @return   ULIST_OK        If next item was fetched successfully, or ULIST_END
  *                           if the end of the list has been reached
  */
-ulist_status_e ulist_get_next_item(ulist_t *list, void *item);
+ulist_status_e ulist_get_next_item(ulist_t *list, void **item);
 
 
 /**
- * Fetch the previous item in the list, starting from the tail item or from the
- * item at the iteration start index (if set). This is a much faster option for
- * iterating over items in a list when compared to #ulist_get_item, since
- * #ulist_get_item has to crawl through the list to find the right node for each
- * call. #ulist_get_previous_item instead keeps references to the current node
- * and item so we can just jump to the previous node when a subsequent call
- * requires it.
+ * Fetch a pointer to the previous item in the list, starting from the tail
+ * item or from the item at the iteration start index (if set). This is a much
+ * faster option for iterating over items in a list when compared to
+ * #ulist_get_item, since #ulist_get_item has to crawl through the list to find
+ * the right node for each call. #ulist_get_previous_item instead keeps
+ * references to the current node and item so we can just jump to the previous
+ * node when a subsequent call requires it.
  *
  * @param    list            List instance
- * @param    item            Pointer to copy item data to
+ * @param    item            Pointer to copy item pointer to. Note that this
+ *                           pointer may become invalid if items are added to or
+ *                           removed from the list.
  *
  * @return   ULIST_OK        If next item was fetched successfully, or ULIST_END
  *                           if the beginning of the list has been reached
  */
-ulist_status_e ulist_get_previous_item(ulist_t *list, void *item);
+ulist_status_e ulist_get_previous_item(ulist_t *list, void **item);
 
 
 /**
@@ -175,37 +172,6 @@ ulist_status_e ulist_get_previous_item(ulist_t *list, void *item);
 ulist_status_e ulist_set_iteration_start_index(ulist_t *list,
     unsigned long long index);
 
-/**
- * Iterate over items in the list until the tail item is reached, starting from
- * the head item or from the item at the iteration start index (if set). This
- * is the fastest way to search for an item in a #ulist_t, since unlike
- * #ulist_get_item this function does not need to lookup the node for each item,
- * and unlike #ulist_get_next_item this function does not automatically copy
- * out the item data.
- *
- * @param    list      List instance
- * @param    handler   Handler to be invoked for every item in the list. See
- *                     #ulist_handler_t
- *
- * @return  ULIST_OK   if iteration was successful
- */
-ulist_status_e ulist_iterate_forwards(ulist_t *list, ulist_handler_t handler);
-
-/**
- * Iterate over items in the list until the head item is reached, starting from
- * the tail item or from the item at the iteration start index (if set). This
- * is the fastest way to search for an item in a #ulist_t, since unlike
- * #ulist_get_item this function does not need to lookup the node for each item,
- * and unlike #ulist_get_previous_item this function does not automatically copy
- * out the item data.
- *
- * @param    list      List instance
- * @param    handler   Handler to be invoked for every item in the list. See
- *                     #ulist_handler_t
- *
- * @return  ULIST_OK   if iteration was successful
- */
-ulist_status_e ulist_iterate_backwards(ulist_t *list, ulist_handler_t handler);
 
 /**
  * Fetch and remove an item from a specific index in a list.

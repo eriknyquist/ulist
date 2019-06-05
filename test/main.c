@@ -7,7 +7,7 @@
 
 #define ITEMS_PER_NODE (32u)
 
-#define TESTLIST_SIZE (1000000u)
+#define TESTLIST_SIZE (10000000u)
 
 void _dump_list(ulist_t *list)
 {
@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
             return err;
         }
     }
-
+/*
     for (int i = 0; i < TESTLIST_SIZE; i++)
     {
         int val;
@@ -59,6 +59,26 @@ int main(int argc, char *argv[])
         {
             return err;
         }
+    }
+
+*/
+    int count = 0;
+    void *data;
+
+    while ((err = ulist_get_next_item(&list, &data)) != ULIST_END)
+    {
+        int val = *(int *)data;
+        if (val != count)
+        {
+            printf("Oh no! %d != %d\n", val, count);
+        }
+
+        count += 1;
+    }
+
+    if (TESTLIST_SIZE != count)
+    {
+        printf("Only got %d of %d items\n",count, TESTLIST_SIZE);
     }
 
     if ((err = ulist_destroy(&list)) != ULIST_OK)
