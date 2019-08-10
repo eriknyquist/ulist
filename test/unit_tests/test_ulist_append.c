@@ -66,29 +66,33 @@ void test_append_ascending_loop(void)
 
 void _do_grow_rate_test(size_t node_size, size_t total_items)
 {
+    ulist_t temp_list;
     size_t expected_num_nodes = 1u;
     unsigned just_crossed_node_boundary = 0u;
 
+   TEST_ASSERT_EQUAL(ULIST_OK, ulist_create(&temp_list, sizeof(int), node_size));
+
     for (int i = 0; i < total_items; i++)
     {
-        // If we just created a new node, verify the reported node count has
-        // increased by 1
+        /* If we just created a new node, verify the reported node count has
+         * increased by 1 */
         if (just_crossed_node_boundary)
         {
             just_crossed_node_boundary = 0u;
             expected_num_nodes += 1u;
         }
-        // If we're just about to exceed the number of items requiring a new
-        // node, verify the reported node count is still the same
-        else if ((list.num_items > 0u) && !(list.num_items % NODE_SIZE))
+        /* If we're just about to exceed the number of items that can fit in a
+         * node, verify the reported node count is still the same */
+        else if ((temp_list.num_items > 0u) && !(temp_list.num_items % node_size))
         {
             just_crossed_node_boundary = 1u;
         }
 
-        TEST_ASSERT_EQUAL(expected_num_nodes, list.nodes);
-        TEST_ASSERT_EQUAL(ULIST_OK, ulist_append_item(&list, &i));
+        TEST_ASSERT_EQUAL(expected_num_nodes, temp_list.nodes);
+        TEST_ASSERT_EQUAL(ULIST_OK, ulist_append_item(&temp_list, &i));
     }
 
+   TEST_ASSERT_EQUAL(ULIST_OK, ulist_destroy(&temp_list));
 }
 
 void test_append_nodes_grow_rate_2(void)
