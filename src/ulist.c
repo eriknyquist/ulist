@@ -20,6 +20,7 @@
 
 #define NODE_DATA(list, node, i) (node->data + (list->item_size_bytes * (i)))
 
+
 // Struct to hold parameters required to access a single data item in list
 typedef struct {
     ulist_node_t *node;
@@ -42,8 +43,9 @@ static ulist_node_t *_alloc_new_node(ulist_t *list)
     return node;
 }
 
-// Move items from src to dest until the number of items in dest has reached
-// more than half. dest and src are expected to be connected.
+
+/* Move items from src to dest until the number of items in dest has reached
+ * more than half. dest and src are expected to be connected. */
 static void _balance_nodes(ulist_t *list, ulist_node_t *dest,
         ulist_node_t *src, unsigned greedy)
 {
@@ -96,6 +98,8 @@ static void _balance_nodes(ulist_t *list, ulist_node_t *dest,
     src->used -= items_to_move;
 }
 
+
+// Add item to a node that has space remaining -- no node allocation required
 static void _add_to_nonfull_node(ulist_t *list, access_params_t *params,
     void *item)
 {
@@ -120,8 +124,9 @@ static void _add_to_nonfull_node(ulist_t *list, access_params_t *params,
     params->node->used += 1u;
 }
 
-// Add a new node after the given node, and move half of the full node's
-// contents into the new node.
+
+/* Add a new item when the target node is full -- allocate a new node, and move
+ * half of the target node's contents into the new node. */
 static ulist_node_t *_add_to_full_node(ulist_t *list, access_params_t *params,
     void *item)
 {
@@ -164,7 +169,8 @@ static ulist_node_t *_add_to_full_node(ulist_t *list, access_params_t *params,
     return new;
 }
 
-// Add item to node, creating a new node if required
+
+// Add item to node at a specific index, creating a new node if required
 static ulist_status_e _insert_item(ulist_t *list, access_params_t *params,
     void *item)
 {
@@ -197,6 +203,7 @@ static ulist_status_e _insert_item(ulist_t *list, access_params_t *params,
     return ULIST_OK;
 }
 
+
 // Free an empty node and connect the nodes on either side of it
 static void _delete_node(ulist_t *list, ulist_node_t *node)
 {
@@ -223,6 +230,9 @@ static void _delete_node(ulist_t *list, ulist_node_t *node)
     list->nodes -= 1u;
 }
 
+
+/* Remove an item from the list. If the deleted item was the last one in the
+ * node, then the empty node will be freed. */
 static void _remove_item(ulist_t *list, access_params_t *params)
 {
     if (params->local_index != (params->node->used - 1u))
@@ -270,6 +280,8 @@ static void _remove_item(ulist_t *list, access_params_t *params)
     }
 }
 
+
+// Find an item by traversing the list from the head node
 static void _forward_crawl(ulist_t *list, unsigned long long index,
     access_params_t *params)
 {
@@ -294,6 +306,8 @@ static void _forward_crawl(ulist_t *list, unsigned long long index,
     params->node = node;
 }
 
+
+// Find an item by traversing the list from the tail node
 static void _backward_crawl(ulist_t *list, unsigned long long index,
     access_params_t *params)
 {
@@ -318,6 +332,7 @@ static void _backward_crawl(ulist_t *list, unsigned long long index,
     params->node = node;
 }
 
+
 // Find a specific data item by index and fill out an access_params_t instance
 static access_params_t *_find_item_by_index(ulist_t *list, unsigned long long index,
     access_params_t *access_params)
@@ -339,12 +354,12 @@ static access_params_t *_find_item_by_index(ulist_t *list, unsigned long long in
         _backward_crawl(list, index, access_params);
     }
 
-    //_forward_crawl(list, index, access_params);
     return access_params;
 }
 
-// Special case for tail item-- instead of handling this in ulist_insert_item,
-// we can avoid a lot of checks and do things a bit quicker in this function
+
+/* Special case for tail item-- instead of handling this in ulist_insert_item,
+ * we can avoid a lot of checks and do things a bit quicker in this function */
 static ulist_status_e _new_tail_item(ulist_t *list, void *item)
 {
     access_params_t params = {.node=list->tail, .local_index=list->tail->used};
@@ -377,6 +392,7 @@ static int _check_write_index(ulist_t *list, unsigned long long index)
     return (0u == list->num_items) ? 0u == index : index <= list->num_items;
 }
 
+
 /**
  * @see ulist_api.h
  */
@@ -391,6 +407,7 @@ ulist_status_e ulist_node_size_bytes(ulist_t *list, size_t *size_bytes)
 
     return ULIST_OK;
 }
+
 
 /**
  * @see ulist_api.h
@@ -421,6 +438,7 @@ ulist_status_e ulist_create(ulist_t *list, size_t item_size_bytes,
     list->tail = list->head;
     return ULIST_OK;
 }
+
 
 /**
  * @see ulist_api.h
@@ -454,6 +472,7 @@ ulist_status_e ulist_destroy(ulist_t *list)
     return ULIST_OK;
 }
 
+
 /**
  * @see ulist_api.h
  */
@@ -485,6 +504,7 @@ ulist_status_e ulist_insert_item(ulist_t *list, unsigned long long index, void *
     return _insert_item(list, &params, item);
 }
 
+
 /**
  * @see ulist_api.h
  */
@@ -497,6 +517,7 @@ ulist_status_e ulist_append_item(ulist_t *list, void *item)
 
     return _new_tail_item(list, item);
 }
+
 
 /**
  * @see ulist_api.h
@@ -526,6 +547,7 @@ ulist_status_e ulist_get_item(ulist_t *list, unsigned long long index,
 
     return ULIST_OK;
 }
+
 
 /**
  * @see ulist_api.h
@@ -563,6 +585,7 @@ ulist_status_e ulist_get_next_item(ulist_t *list, void **item)
 
     return ULIST_OK;
 }
+
 
 /**
  * @see ulist_api.h
@@ -619,6 +642,7 @@ ulist_status_e ulist_get_previous_item(ulist_t *list, void **item)
     return ULIST_OK;
 }
 
+
 /**
  * @see ulist_api.h
  */
@@ -647,6 +671,7 @@ ulist_status_e ulist_set_iteration_start_index(ulist_t *list,
     list->current = params.node;
     return ULIST_OK;
 }
+
 
 /**
  * @see ulist_api.h
