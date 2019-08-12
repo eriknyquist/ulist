@@ -71,9 +71,12 @@ static void _balance_nodes(ulist_t *list, ulist_node_t *dest,
 
     if (head_to_tail)
     {
-        // Move data in dest to make room
-        size_t dest_size = dest->used * list->item_size_bytes;
-        memmove(dest->data + bytes_to_move, dest->data, dest_size);
+        if (dest->used > 0u)
+        {
+            // Existing data in dest, shift it to make room
+            size_t dest_size = dest->used * list->item_size_bytes;
+            memmove(dest->data + bytes_to_move, dest->data, dest_size);
+        }
 
         // Move data from src to dest
         size_t src_index = src->used - items_to_move;
@@ -86,7 +89,7 @@ static void _balance_nodes(ulist_t *list, ulist_node_t *dest,
 
         if (items_to_move < src->used)
         {
-            // Remaining data in src, move it back to cover free space
+            // Remaining data in src, move it back to cover the free space
             memmove(
                 src->data,
                 src->data + bytes_to_move,
